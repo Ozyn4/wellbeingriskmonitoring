@@ -1,0 +1,2288 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width"
+    />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <link rel="stylesheet" href="css/leaflet.css" />
+    <link rel="stylesheet" href="css/L.Control.Layers.Tree.css" />
+    <link rel="stylesheet" href="css/L.Control.Locate.min.css" />
+    <link rel="stylesheet" href="css/qgis2web.css" />
+    <link rel="stylesheet" href="css/fontawesome-all.min.css" />
+    <link rel="stylesheet" href="css/leaflet-control-geocoder.Geocoder.css" />
+    <style>
+      html,
+      body,
+      #map {
+        width: 100%;
+        height: 100%;
+        padding: 0;
+        margin: 0;
+      }
+    </style>
+    <title>Wellbeing Risk Monitoring</title>
+  </head>
+  <body>
+    <div id="map"></div>
+    <script src="js/qgis2web_expressions.js"></script>
+    <script src="js/leaflet.js"></script>
+    <script src="js/L.Control.Layers.Tree.min.js"></script>
+    <script src="js/L.Control.Locate.min.js"></script>
+    <script src="js/leaflet.rotatedMarker.js"></script>
+    <script src="js/leaflet.pattern.js"></script>
+    <script src="js/leaflet-hash.js"></script>
+    <script src="js/Autolinker.min.js"></script>
+    <script src="js/rbush.min.js"></script>
+    <script src="js/labelgun.min.js"></script>
+    <script src="js/labels.js"></script>
+    <script src="js/leaflet-control-geocoder.Geocoder.js"></script>
+    <script src="data/NO2_1.js"></script>
+    <script src="data/CO_2.js"></script>
+    <script src="data/SO2_3.js"></script>
+    <script src="data/GeospasialofHealthcareInfrstructure_4.js"></script>
+    <script src="data/Humidity_5.js"></script>
+    <script src="data/Temperature_6.js"></script>
+    <script src="data/Precipitation_7.js"></script>
+    <script src="data/Hepatitis_8.js"></script>
+    <script src="data/Diarrhea_9.js"></script>
+    <script src="data/ISPA_10.js"></script>
+    <script src="data/AdministrativeBoundaries_11.js"></script>
+    <script>
+      var highlightLayer;
+      function highlightFeature(e) {
+        highlightLayer = e.target;
+
+        if (
+          e.target.feature.geometry.type === "LineString" ||
+          e.target.feature.geometry.type === "MultiLineString"
+        ) {
+          highlightLayer.setStyle({
+            color: "#ffff00",
+          });
+        } else {
+          highlightLayer.setStyle({
+            fillColor: "#ffff00",
+            fillOpacity: 1,
+          });
+        }
+        highlightLayer.openPopup();
+      }
+      var map = L.map("map", {
+        zoomControl: false,
+        maxZoom: 28,
+        minZoom: 1,
+      }).fitBounds([
+        [-8.040438190757873, 106.43511145774089],
+        [-5.870541194822778, 109.03551601766951],
+      ]);
+      var hash = new L.Hash(map);
+      map.attributionControl.setPrefix(
+        '<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>'
+      );
+      var autolinker = new Autolinker({
+        truncate: { length: 30, location: "smart" },
+      });
+      // remove popup's row if "visible-with-data"
+      function removeEmptyRowsFromPopupContent(content, feature) {
+        var tempDiv = document.createElement("div");
+        tempDiv.innerHTML = content;
+        var rows = tempDiv.querySelectorAll("tr");
+        for (var i = 0; i < rows.length; i++) {
+          var td = rows[i].querySelector("td.visible-with-data");
+          var key = td ? td.id : "";
+          if (
+            td &&
+            td.classList.contains("visible-with-data") &&
+            feature.properties[key] == null
+          ) {
+            rows[i].parentNode.removeChild(rows[i]);
+          }
+        }
+        return tempDiv.innerHTML;
+      }
+      // add class to format popup if it contains media
+      function addClassToPopupIfMedia(content, popup) {
+        var tempDiv = document.createElement("div");
+        tempDiv.innerHTML = content;
+        if (tempDiv.querySelector("td img")) {
+          popup._contentNode.classList.add("media");
+          // Delay to force the redraw
+          setTimeout(function () {
+            popup.update();
+          }, 10);
+        } else {
+          popup._contentNode.classList.remove("media");
+        }
+      }
+      var zoomControl = L.control
+        .zoom({
+          position: "topleft",
+        })
+        .addTo(map);
+      L.control.locate({ locateOptions: { maxZoom: 19 } }).addTo(map);
+      var bounds_group = new L.featureGroup([]);
+      function setBounds() {
+        map.setMaxBounds(map.getBounds());
+      }
+      map.createPane("pane_GoogleHybrid_0");
+      map.getPane("pane_GoogleHybrid_0").style.zIndex = 400;
+      var layer_GoogleHybrid_0 = L.tileLayer(
+        "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
+        {
+          pane: "pane_GoogleHybrid_0",
+          opacity: 1.0,
+          attribution:
+            '<a href="https://www.google.at/permissions/geoguidelines/attr-guide.html">Map data ©2015 Google</a>',
+          minZoom: 1,
+          maxZoom: 28,
+          minNativeZoom: 0,
+          maxNativeZoom: 20,
+        }
+      );
+      layer_GoogleHybrid_0;
+      map.addLayer(layer_GoogleHybrid_0);
+      function pop_NO2_1(feature, layer) {
+        layer.on({
+          mouseout: function (e) {
+            for (var i in e.target._eventParents) {
+              if (typeof e.target._eventParents[i].resetStyle === "function") {
+                e.target._eventParents[i].resetStyle(e.target);
+              }
+            }
+            if (typeof layer.closePopup == "function") {
+              layer.closePopup();
+            } else {
+              layer.eachLayer(function (feature) {
+                feature.closePopup();
+              });
+            }
+          },
+          mouseover: highlightFeature,
+        });
+        var popupContent =
+          '<table>\
+                    <tr>\
+                        <th scope="row">id</th>\
+                        <td class="visible-with-data" id="id">' +
+          (feature.properties["id"] !== null
+            ? autolinker.link(feature.properties["id"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">SO2</th>\
+                        <td class="visible-with-data" id="SO2">' +
+          (feature.properties["SO2"] !== null
+            ? autolinker.link(feature.properties["SO2"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Density of Health-care Infrastructure</th>\
+                        <td class="visible-with-data" id="Density of Health-care Infrastructure">' +
+          (feature.properties["Density of Health-care Infrastructure"] !== null
+            ? autolinker.link(
+                feature.properties[
+                  "Density of Health-care Infrastructure"
+                ].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">CO</th>\
+                        <td class="visible-with-data" id="CO">' +
+          (feature.properties["CO"] !== null
+            ? autolinker.link(feature.properties["CO"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NO2</th>\
+                        <td class="visible-with-data" id="NO2">' +
+          (feature.properties["NO2"] !== null
+            ? autolinker.link(feature.properties["NO2"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Precitipation</th>\
+                        <td class="visible-with-data" id="Precitipation">' +
+          (feature.properties["Precitipation"] !== null
+            ? autolinker.link(
+                feature.properties["Precitipation"].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Temperature</th>\
+                        <td class="visible-with-data" id="Temperature">' +
+          (feature.properties["Temperature"] !== null
+            ? autolinker.link(
+                feature.properties["Temperature"].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Humidity</th>\
+                        <td class="visible-with-data" id="Humidity">' +
+          (feature.properties["Humidity"] !== null
+            ? autolinker.link(feature.properties["Humidity"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ISPA</th>\
+                        <td class="visible-with-data" id="ISPA">' +
+          (feature.properties["ISPA"] !== null
+            ? autolinker.link(feature.properties["ISPA"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Diarrhea</th>\
+                        <td class="visible-with-data" id="Diarrhea">' +
+          (feature.properties["Diarrhea"] !== null
+            ? autolinker.link(feature.properties["Diarrhea"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Hepatitis</th>\
+                        <td class="visible-with-data" id="Hepatitis">' +
+          (feature.properties["Hepatitis"] !== null
+            ? autolinker.link(feature.properties["Hepatitis"].toLocaleString())
+            : "") +
+          "</td>\
+                    </tr>\
+                </table>";
+        var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+        layer.on("popupopen", function (e) {
+          addClassToPopupIfMedia(content, e.popup);
+        });
+        layer.bindPopup(content, { maxHeight: 400 });
+      }
+
+      function style_NO2_1_0(feature) {
+        if (
+          feature.properties["NO2"] >= 0.000006 &&
+          feature.properties["NO2"] <= 0.000049
+        ) {
+          return {
+            pane: "pane_NO2_1",
+            stroke: false,
+            fill: true,
+            fillOpacity: 1,
+            fillColor: "rgba(251,112,80,1.0)",
+            interactive: true,
+          };
+        }
+        if (
+          feature.properties["NO2"] >= 0.000049 &&
+          feature.properties["NO2"] <= 0.000093
+        ) {
+          return {
+            pane: "pane_NO2_1",
+            stroke: false,
+            fill: true,
+            fillOpacity: 1,
+            fillColor: "rgba(234,55,42,1.0)",
+            interactive: true,
+          };
+        }
+        if (
+          feature.properties["NO2"] >= 0.000093 &&
+          feature.properties["NO2"] <= 0.000136
+        ) {
+          return {
+            pane: "pane_NO2_1",
+            stroke: false,
+            fill: true,
+            fillOpacity: 1,
+            fillColor: "rgba(103,0,13,1.0)",
+            interactive: true,
+          };
+        }
+      }
+      map.createPane("pane_NO2_1");
+      map.getPane("pane_NO2_1").style.zIndex = 401;
+      map.getPane("pane_NO2_1").style["mix-blend-mode"] = "normal";
+      var layer_NO2_1 = new L.geoJson(json_NO2_1, {
+        attribution: "",
+        interactive: true,
+        dataVar: "json_NO2_1",
+        layerName: "layer_NO2_1",
+        pane: "pane_NO2_1",
+        onEachFeature: pop_NO2_1,
+        style: style_NO2_1_0,
+      });
+      bounds_group.addLayer(layer_NO2_1);
+      function pop_CO_2(feature, layer) {
+        layer.on({
+          mouseout: function (e) {
+            for (var i in e.target._eventParents) {
+              if (typeof e.target._eventParents[i].resetStyle === "function") {
+                e.target._eventParents[i].resetStyle(e.target);
+              }
+            }
+            if (typeof layer.closePopup == "function") {
+              layer.closePopup();
+            } else {
+              layer.eachLayer(function (feature) {
+                feature.closePopup();
+              });
+            }
+          },
+          mouseover: highlightFeature,
+        });
+        var popupContent =
+          '<table>\
+                    <tr>\
+                        <th scope="row">id</th>\
+                        <td class="visible-with-data" id="id">' +
+          (feature.properties["id"] !== null
+            ? autolinker.link(feature.properties["id"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">SO2</th>\
+                        <td class="visible-with-data" id="SO2">' +
+          (feature.properties["SO2"] !== null
+            ? autolinker.link(feature.properties["SO2"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Density of Health-care Infrastructure</th>\
+                        <td class="visible-with-data" id="Density of Health-care Infrastructure">' +
+          (feature.properties["Density of Health-care Infrastructure"] !== null
+            ? autolinker.link(
+                feature.properties[
+                  "Density of Health-care Infrastructure"
+                ].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">CO</th>\
+                        <td class="visible-with-data" id="CO">' +
+          (feature.properties["CO"] !== null
+            ? autolinker.link(feature.properties["CO"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NO2</th>\
+                        <td class="visible-with-data" id="NO2">' +
+          (feature.properties["NO2"] !== null
+            ? autolinker.link(feature.properties["NO2"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Precitipation</th>\
+                        <td class="visible-with-data" id="Precitipation">' +
+          (feature.properties["Precitipation"] !== null
+            ? autolinker.link(
+                feature.properties["Precitipation"].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Temperature</th>\
+                        <td class="visible-with-data" id="Temperature">' +
+          (feature.properties["Temperature"] !== null
+            ? autolinker.link(
+                feature.properties["Temperature"].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Humidity</th>\
+                        <td class="visible-with-data" id="Humidity">' +
+          (feature.properties["Humidity"] !== null
+            ? autolinker.link(feature.properties["Humidity"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ISPA</th>\
+                        <td class="visible-with-data" id="ISPA">' +
+          (feature.properties["ISPA"] !== null
+            ? autolinker.link(feature.properties["ISPA"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Diarrhea</th>\
+                        <td class="visible-with-data" id="Diarrhea">' +
+          (feature.properties["Diarrhea"] !== null
+            ? autolinker.link(feature.properties["Diarrhea"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Hepatitis</th>\
+                        <td class="visible-with-data" id="Hepatitis">' +
+          (feature.properties["Hepatitis"] !== null
+            ? autolinker.link(feature.properties["Hepatitis"].toLocaleString())
+            : "") +
+          "</td>\
+                    </tr>\
+                </table>";
+        var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+        layer.on("popupopen", function (e) {
+          addClassToPopupIfMedia(content, e.popup);
+        });
+        layer.bindPopup(content, { maxHeight: 400 });
+      }
+
+      function style_CO_2_0(feature) {
+        if (
+          feature.properties["CO"] >= 0.023737 &&
+          feature.properties["CO"] <= 0.029121
+        ) {
+          return {
+            pane: "pane_CO_2",
+            stroke: false,
+            fill: true,
+            fillOpacity: 1,
+            fillColor: "rgba(251,112,80,1.0)",
+            interactive: true,
+          };
+        }
+        if (
+          feature.properties["CO"] >= 0.029121 &&
+          feature.properties["CO"] <= 0.034505
+        ) {
+          return {
+            pane: "pane_CO_2",
+            stroke: false,
+            fill: true,
+            fillOpacity: 1,
+            fillColor: "rgba(234,55,42,1.0)",
+            interactive: true,
+          };
+        }
+        if (
+          feature.properties["CO"] >= 0.034505 &&
+          feature.properties["CO"] <= 0.039889
+        ) {
+          return {
+            pane: "pane_CO_2",
+            stroke: false,
+            fill: true,
+            fillOpacity: 1,
+            fillColor: "rgba(103,0,13,1.0)",
+            interactive: true,
+          };
+        }
+      }
+      map.createPane("pane_CO_2");
+      map.getPane("pane_CO_2").style.zIndex = 402;
+      map.getPane("pane_CO_2").style["mix-blend-mode"] = "normal";
+      var layer_CO_2 = new L.geoJson(json_CO_2, {
+        attribution: "",
+        interactive: true,
+        dataVar: "json_CO_2",
+        layerName: "layer_CO_2",
+        pane: "pane_CO_2",
+        onEachFeature: pop_CO_2,
+        style: style_CO_2_0,
+      });
+      bounds_group.addLayer(layer_CO_2);
+      function pop_SO2_3(feature, layer) {
+        layer.on({
+          mouseout: function (e) {
+            for (var i in e.target._eventParents) {
+              if (typeof e.target._eventParents[i].resetStyle === "function") {
+                e.target._eventParents[i].resetStyle(e.target);
+              }
+            }
+            if (typeof layer.closePopup == "function") {
+              layer.closePopup();
+            } else {
+              layer.eachLayer(function (feature) {
+                feature.closePopup();
+              });
+            }
+          },
+          mouseover: highlightFeature,
+        });
+        var popupContent =
+          '<table>\
+                    <tr>\
+                        <th scope="row">id</th>\
+                        <td class="visible-with-data" id="id">' +
+          (feature.properties["id"] !== null
+            ? autolinker.link(feature.properties["id"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">SO2</th>\
+                        <td class="visible-with-data" id="SO2">' +
+          (feature.properties["SO2"] !== null
+            ? autolinker.link(feature.properties["SO2"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Density of Health-care Infrastructure</th>\
+                        <td class="visible-with-data" id="Density of Health-care Infrastructure">' +
+          (feature.properties["Density of Health-care Infrastructure"] !== null
+            ? autolinker.link(
+                feature.properties[
+                  "Density of Health-care Infrastructure"
+                ].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">CO</th>\
+                        <td class="visible-with-data" id="CO">' +
+          (feature.properties["CO"] !== null
+            ? autolinker.link(feature.properties["CO"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NO2</th>\
+                        <td class="visible-with-data" id="NO2">' +
+          (feature.properties["NO2"] !== null
+            ? autolinker.link(feature.properties["NO2"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Precitipation</th>\
+                        <td class="visible-with-data" id="Precitipation">' +
+          (feature.properties["Precitipation"] !== null
+            ? autolinker.link(
+                feature.properties["Precitipation"].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Temperature</th>\
+                        <td class="visible-with-data" id="Temperature">' +
+          (feature.properties["Temperature"] !== null
+            ? autolinker.link(
+                feature.properties["Temperature"].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Humidity</th>\
+                        <td class="visible-with-data" id="Humidity">' +
+          (feature.properties["Humidity"] !== null
+            ? autolinker.link(feature.properties["Humidity"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ISPA</th>\
+                        <td class="visible-with-data" id="ISPA">' +
+          (feature.properties["ISPA"] !== null
+            ? autolinker.link(feature.properties["ISPA"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Diarrhea</th>\
+                        <td class="visible-with-data" id="Diarrhea">' +
+          (feature.properties["Diarrhea"] !== null
+            ? autolinker.link(feature.properties["Diarrhea"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Hepatitis</th>\
+                        <td class="visible-with-data" id="Hepatitis">' +
+          (feature.properties["Hepatitis"] !== null
+            ? autolinker.link(feature.properties["Hepatitis"].toLocaleString())
+            : "") +
+          "</td>\
+                    </tr>\
+                </table>";
+        var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+        layer.on("popupopen", function (e) {
+          addClassToPopupIfMedia(content, e.popup);
+        });
+        layer.bindPopup(content, { maxHeight: 400 });
+      }
+
+      function style_SO2_3_0(feature) {
+        if (
+          feature.properties["SO2"] >= -0.000289 &&
+          feature.properties["SO2"] <= -0.000079
+        ) {
+          return {
+            pane: "pane_SO2_3",
+            stroke: false,
+            fill: true,
+            fillOpacity: 1,
+            fillColor: "rgba(251,112,80,1.0)",
+            interactive: true,
+          };
+        }
+        if (
+          feature.properties["SO2"] >= -0.000079 &&
+          feature.properties["SO2"] <= 0.000132
+        ) {
+          return {
+            pane: "pane_SO2_3",
+            stroke: false,
+            fill: true,
+            fillOpacity: 1,
+            fillColor: "rgba(234,55,42,1.0)",
+            interactive: true,
+          };
+        }
+        if (
+          feature.properties["SO2"] >= 0.000132 &&
+          feature.properties["SO2"] <= 0.000342
+        ) {
+          return {
+            pane: "pane_SO2_3",
+            stroke: false,
+            fill: true,
+            fillOpacity: 1,
+            fillColor: "rgba(103,0,13,1.0)",
+            interactive: true,
+          };
+        }
+      }
+      map.createPane("pane_SO2_3");
+      map.getPane("pane_SO2_3").style.zIndex = 403;
+      map.getPane("pane_SO2_3").style["mix-blend-mode"] = "normal";
+      var layer_SO2_3 = new L.geoJson(json_SO2_3, {
+        attribution: "",
+        interactive: true,
+        dataVar: "json_SO2_3",
+        layerName: "layer_SO2_3",
+        pane: "pane_SO2_3",
+        onEachFeature: pop_SO2_3,
+        style: style_SO2_3_0,
+      });
+      bounds_group.addLayer(layer_SO2_3);
+      function pop_GeospasialofHealthcareInfrstructure_4(feature, layer) {
+        layer.on({
+          mouseout: function (e) {
+            for (var i in e.target._eventParents) {
+              if (typeof e.target._eventParents[i].resetStyle === "function") {
+                e.target._eventParents[i].resetStyle(e.target);
+              }
+            }
+            if (typeof layer.closePopup == "function") {
+              layer.closePopup();
+            } else {
+              layer.eachLayer(function (feature) {
+                feature.closePopup();
+              });
+            }
+          },
+          mouseover: highlightFeature,
+        });
+        var popupContent =
+          '<table>\
+                    <tr>\
+                        <th scope="row">id</th>\
+                        <td class="visible-with-data" id="id">' +
+          (feature.properties["id"] !== null
+            ? autolinker.link(feature.properties["id"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">SO2</th>\
+                        <td class="visible-with-data" id="SO2">' +
+          (feature.properties["SO2"] !== null
+            ? autolinker.link(feature.properties["SO2"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Density of Health-care Infrastructure</th>\
+                        <td class="visible-with-data" id="Density of Health-care Infrastructure">' +
+          (feature.properties["Density of Health-care Infrastructure"] !== null
+            ? autolinker.link(
+                feature.properties[
+                  "Density of Health-care Infrastructure"
+                ].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">CO</th>\
+                        <td class="visible-with-data" id="CO">' +
+          (feature.properties["CO"] !== null
+            ? autolinker.link(feature.properties["CO"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NO2</th>\
+                        <td class="visible-with-data" id="NO2">' +
+          (feature.properties["NO2"] !== null
+            ? autolinker.link(feature.properties["NO2"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Precitipation</th>\
+                        <td class="visible-with-data" id="Precitipation">' +
+          (feature.properties["Precitipation"] !== null
+            ? autolinker.link(
+                feature.properties["Precitipation"].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Temperature</th>\
+                        <td class="visible-with-data" id="Temperature">' +
+          (feature.properties["Temperature"] !== null
+            ? autolinker.link(
+                feature.properties["Temperature"].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Humidity</th>\
+                        <td class="visible-with-data" id="Humidity">' +
+          (feature.properties["Humidity"] !== null
+            ? autolinker.link(feature.properties["Humidity"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ISPA</th>\
+                        <td class="visible-with-data" id="ISPA">' +
+          (feature.properties["ISPA"] !== null
+            ? autolinker.link(feature.properties["ISPA"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Diarrhea</th>\
+                        <td class="visible-with-data" id="Diarrhea">' +
+          (feature.properties["Diarrhea"] !== null
+            ? autolinker.link(feature.properties["Diarrhea"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Hepatitis</th>\
+                        <td class="visible-with-data" id="Hepatitis">' +
+          (feature.properties["Hepatitis"] !== null
+            ? autolinker.link(feature.properties["Hepatitis"].toLocaleString())
+            : "") +
+          "</td>\
+                    </tr>\
+                </table>";
+        var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+        layer.on("popupopen", function (e) {
+          addClassToPopupIfMedia(content, e.popup);
+        });
+        layer.bindPopup(content, { maxHeight: 400 });
+      }
+
+      function style_GeospasialofHealthcareInfrstructure_4_0(feature) {
+        if (
+          feature.properties["Density of Health-care Infrastructure"] >= 0.0 &&
+          feature.properties["Density of Health-care Infrastructure"] <=
+            13.666667
+        ) {
+          return {
+            pane: "pane_GeospasialofHealthcareInfrstructure_4",
+            stroke: false,
+            fill: true,
+            fillOpacity: 1,
+            fillColor: "rgba(251,112,80,1.0)",
+            interactive: true,
+          };
+        }
+        if (
+          feature.properties["Density of Health-care Infrastructure"] >=
+            13.666667 &&
+          feature.properties["Density of Health-care Infrastructure"] <=
+            27.333333
+        ) {
+          return {
+            pane: "pane_GeospasialofHealthcareInfrstructure_4",
+            stroke: false,
+            fill: true,
+            fillOpacity: 1,
+            fillColor: "rgba(234,55,42,1.0)",
+            interactive: true,
+          };
+        }
+        if (
+          feature.properties["Density of Health-care Infrastructure"] >=
+            27.333333 &&
+          feature.properties["Density of Health-care Infrastructure"] <= 41.0
+        ) {
+          return {
+            pane: "pane_GeospasialofHealthcareInfrstructure_4",
+            stroke: false,
+            fill: true,
+            fillOpacity: 1,
+            fillColor: "rgba(103,0,13,1.0)",
+            interactive: true,
+          };
+        }
+      }
+      map.createPane("pane_GeospasialofHealthcareInfrstructure_4");
+      map.getPane(
+        "pane_GeospasialofHealthcareInfrstructure_4"
+      ).style.zIndex = 404;
+      map.getPane("pane_GeospasialofHealthcareInfrstructure_4").style[
+        "mix-blend-mode"
+      ] = "normal";
+      var layer_GeospasialofHealthcareInfrstructure_4 = new L.geoJson(
+        json_GeospasialofHealthcareInfrstructure_4,
+        {
+          attribution: "",
+          interactive: true,
+          dataVar: "json_GeospasialofHealthcareInfrstructure_4",
+          layerName: "layer_GeospasialofHealthcareInfrstructure_4",
+          pane: "pane_GeospasialofHealthcareInfrstructure_4",
+          onEachFeature: pop_GeospasialofHealthcareInfrstructure_4,
+          style: style_GeospasialofHealthcareInfrstructure_4_0,
+        }
+      );
+      bounds_group.addLayer(layer_GeospasialofHealthcareInfrstructure_4);
+      function pop_Humidity_5(feature, layer) {
+        layer.on({
+          mouseout: function (e) {
+            for (var i in e.target._eventParents) {
+              if (typeof e.target._eventParents[i].resetStyle === "function") {
+                e.target._eventParents[i].resetStyle(e.target);
+              }
+            }
+            if (typeof layer.closePopup == "function") {
+              layer.closePopup();
+            } else {
+              layer.eachLayer(function (feature) {
+                feature.closePopup();
+              });
+            }
+          },
+          mouseover: highlightFeature,
+        });
+        var popupContent =
+          '<table>\
+                    <tr>\
+                        <th scope="row">id</th>\
+                        <td class="visible-with-data" id="id">' +
+          (feature.properties["id"] !== null
+            ? autolinker.link(feature.properties["id"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">SO2</th>\
+                        <td class="visible-with-data" id="SO2">' +
+          (feature.properties["SO2"] !== null
+            ? autolinker.link(feature.properties["SO2"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Density of Health-care Infrastructure</th>\
+                        <td class="visible-with-data" id="Density of Health-care Infrastructure">' +
+          (feature.properties["Density of Health-care Infrastructure"] !== null
+            ? autolinker.link(
+                feature.properties[
+                  "Density of Health-care Infrastructure"
+                ].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">CO</th>\
+                        <td class="visible-with-data" id="CO">' +
+          (feature.properties["CO"] !== null
+            ? autolinker.link(feature.properties["CO"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NO2</th>\
+                        <td class="visible-with-data" id="NO2">' +
+          (feature.properties["NO2"] !== null
+            ? autolinker.link(feature.properties["NO2"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Precitipation</th>\
+                        <td class="visible-with-data" id="Precitipation">' +
+          (feature.properties["Precitipation"] !== null
+            ? autolinker.link(
+                feature.properties["Precitipation"].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Temperature</th>\
+                        <td class="visible-with-data" id="Temperature">' +
+          (feature.properties["Temperature"] !== null
+            ? autolinker.link(
+                feature.properties["Temperature"].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Humidity</th>\
+                        <td class="visible-with-data" id="Humidity">' +
+          (feature.properties["Humidity"] !== null
+            ? autolinker.link(feature.properties["Humidity"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ISPA</th>\
+                        <td class="visible-with-data" id="ISPA">' +
+          (feature.properties["ISPA"] !== null
+            ? autolinker.link(feature.properties["ISPA"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Diarrhea</th>\
+                        <td class="visible-with-data" id="Diarrhea">' +
+          (feature.properties["Diarrhea"] !== null
+            ? autolinker.link(feature.properties["Diarrhea"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Hepatitis</th>\
+                        <td class="visible-with-data" id="Hepatitis">' +
+          (feature.properties["Hepatitis"] !== null
+            ? autolinker.link(feature.properties["Hepatitis"].toLocaleString())
+            : "") +
+          "</td>\
+                    </tr>\
+                </table>";
+        var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+        layer.on("popupopen", function (e) {
+          addClassToPopupIfMedia(content, e.popup);
+        });
+        layer.bindPopup(content, { maxHeight: 400 });
+      }
+
+      function style_Humidity_5_0(feature) {
+        if (
+          feature.properties["Humidity"] >= 76.260608 &&
+          feature.properties["Humidity"] <= 80.285048
+        ) {
+          return {
+            pane: "pane_Humidity_5",
+            stroke: false,
+            fill: true,
+            fillOpacity: 1,
+            fillColor: "rgba(252,164,134,1.0)",
+            interactive: true,
+          };
+        }
+        if (
+          feature.properties["Humidity"] >= 80.285048 &&
+          feature.properties["Humidity"] <= 84.309487
+        ) {
+          return {
+            pane: "pane_Humidity_5",
+            stroke: false,
+            fill: true,
+            fillOpacity: 1,
+            fillColor: "rgba(234,55,42,1.0)",
+            interactive: true,
+          };
+        }
+        if (
+          feature.properties["Humidity"] >= 84.309487 &&
+          feature.properties["Humidity"] <= 88.333927
+        ) {
+          return {
+            pane: "pane_Humidity_5",
+            stroke: false,
+            fill: true,
+            fillOpacity: 1,
+            fillColor: "rgba(103,0,13,1.0)",
+            interactive: true,
+          };
+        }
+      }
+      map.createPane("pane_Humidity_5");
+      map.getPane("pane_Humidity_5").style.zIndex = 405;
+      map.getPane("pane_Humidity_5").style["mix-blend-mode"] = "normal";
+      var layer_Humidity_5 = new L.geoJson(json_Humidity_5, {
+        attribution: "",
+        interactive: true,
+        dataVar: "json_Humidity_5",
+        layerName: "layer_Humidity_5",
+        pane: "pane_Humidity_5",
+        onEachFeature: pop_Humidity_5,
+        style: style_Humidity_5_0,
+      });
+      bounds_group.addLayer(layer_Humidity_5);
+      function pop_Temperature_6(feature, layer) {
+        layer.on({
+          mouseout: function (e) {
+            for (var i in e.target._eventParents) {
+              if (typeof e.target._eventParents[i].resetStyle === "function") {
+                e.target._eventParents[i].resetStyle(e.target);
+              }
+            }
+            if (typeof layer.closePopup == "function") {
+              layer.closePopup();
+            } else {
+              layer.eachLayer(function (feature) {
+                feature.closePopup();
+              });
+            }
+          },
+          mouseover: highlightFeature,
+        });
+        var popupContent =
+          '<table>\
+                    <tr>\
+                        <th scope="row">id</th>\
+                        <td class="visible-with-data" id="id">' +
+          (feature.properties["id"] !== null
+            ? autolinker.link(feature.properties["id"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">SO2</th>\
+                        <td class="visible-with-data" id="SO2">' +
+          (feature.properties["SO2"] !== null
+            ? autolinker.link(feature.properties["SO2"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Density of Health-care Infrastructure</th>\
+                        <td class="visible-with-data" id="Density of Health-care Infrastructure">' +
+          (feature.properties["Density of Health-care Infrastructure"] !== null
+            ? autolinker.link(
+                feature.properties[
+                  "Density of Health-care Infrastructure"
+                ].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">CO</th>\
+                        <td class="visible-with-data" id="CO">' +
+          (feature.properties["CO"] !== null
+            ? autolinker.link(feature.properties["CO"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NO2</th>\
+                        <td class="visible-with-data" id="NO2">' +
+          (feature.properties["NO2"] !== null
+            ? autolinker.link(feature.properties["NO2"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Precitipation</th>\
+                        <td class="visible-with-data" id="Precitipation">' +
+          (feature.properties["Precitipation"] !== null
+            ? autolinker.link(
+                feature.properties["Precitipation"].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Temperature</th>\
+                        <td class="visible-with-data" id="Temperature">' +
+          (feature.properties["Temperature"] !== null
+            ? autolinker.link(
+                feature.properties["Temperature"].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Humidity</th>\
+                        <td class="visible-with-data" id="Humidity">' +
+          (feature.properties["Humidity"] !== null
+            ? autolinker.link(feature.properties["Humidity"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ISPA</th>\
+                        <td class="visible-with-data" id="ISPA">' +
+          (feature.properties["ISPA"] !== null
+            ? autolinker.link(feature.properties["ISPA"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Diarrhea</th>\
+                        <td class="visible-with-data" id="Diarrhea">' +
+          (feature.properties["Diarrhea"] !== null
+            ? autolinker.link(feature.properties["Diarrhea"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Hepatitis</th>\
+                        <td class="visible-with-data" id="Hepatitis">' +
+          (feature.properties["Hepatitis"] !== null
+            ? autolinker.link(feature.properties["Hepatitis"].toLocaleString())
+            : "") +
+          "</td>\
+                    </tr>\
+                </table>";
+        var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+        layer.on("popupopen", function (e) {
+          addClassToPopupIfMedia(content, e.popup);
+        });
+        layer.bindPopup(content, { maxHeight: 400 });
+      }
+
+      function style_Temperature_6_0(feature) {
+        if (
+          feature.properties["Temperature"] >= 20.002052 &&
+          feature.properties["Temperature"] <= 23.013563
+        ) {
+          return {
+            pane: "pane_Temperature_6",
+            stroke: false,
+            fill: true,
+            fillOpacity: 1,
+            fillColor: "rgba(252,164,134,1.0)",
+            interactive: true,
+          };
+        }
+        if (
+          feature.properties["Temperature"] >= 23.013563 &&
+          feature.properties["Temperature"] <= 26.025073
+        ) {
+          return {
+            pane: "pane_Temperature_6",
+            stroke: false,
+            fill: true,
+            fillOpacity: 1,
+            fillColor: "rgba(234,55,42,1.0)",
+            interactive: true,
+          };
+        }
+        if (
+          feature.properties["Temperature"] >= 26.025073 &&
+          feature.properties["Temperature"] <= 29.036584
+        ) {
+          return {
+            pane: "pane_Temperature_6",
+            stroke: false,
+            fill: true,
+            fillOpacity: 1,
+            fillColor: "rgba(103,0,13,1.0)",
+            interactive: true,
+          };
+        }
+      }
+      map.createPane("pane_Temperature_6");
+      map.getPane("pane_Temperature_6").style.zIndex = 406;
+      map.getPane("pane_Temperature_6").style["mix-blend-mode"] = "normal";
+      var layer_Temperature_6 = new L.geoJson(json_Temperature_6, {
+        attribution: "",
+        interactive: true,
+        dataVar: "json_Temperature_6",
+        layerName: "layer_Temperature_6",
+        pane: "pane_Temperature_6",
+        onEachFeature: pop_Temperature_6,
+        style: style_Temperature_6_0,
+      });
+      bounds_group.addLayer(layer_Temperature_6);
+      function pop_Precipitation_7(feature, layer) {
+        layer.on({
+          mouseout: function (e) {
+            for (var i in e.target._eventParents) {
+              if (typeof e.target._eventParents[i].resetStyle === "function") {
+                e.target._eventParents[i].resetStyle(e.target);
+              }
+            }
+            if (typeof layer.closePopup == "function") {
+              layer.closePopup();
+            } else {
+              layer.eachLayer(function (feature) {
+                feature.closePopup();
+              });
+            }
+          },
+          mouseover: highlightFeature,
+        });
+        var popupContent =
+          '<table>\
+                    <tr>\
+                        <th scope="row">id</th>\
+                        <td class="visible-with-data" id="id">' +
+          (feature.properties["id"] !== null
+            ? autolinker.link(feature.properties["id"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">SO2</th>\
+                        <td class="visible-with-data" id="SO2">' +
+          (feature.properties["SO2"] !== null
+            ? autolinker.link(feature.properties["SO2"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Density of Health-care Infrastructure</th>\
+                        <td class="visible-with-data" id="Density of Health-care Infrastructure">' +
+          (feature.properties["Density of Health-care Infrastructure"] !== null
+            ? autolinker.link(
+                feature.properties[
+                  "Density of Health-care Infrastructure"
+                ].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">CO</th>\
+                        <td class="visible-with-data" id="CO">' +
+          (feature.properties["CO"] !== null
+            ? autolinker.link(feature.properties["CO"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NO2</th>\
+                        <td class="visible-with-data" id="NO2">' +
+          (feature.properties["NO2"] !== null
+            ? autolinker.link(feature.properties["NO2"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Precitipation</th>\
+                        <td class="visible-with-data" id="Precitipation">' +
+          (feature.properties["Precitipation"] !== null
+            ? autolinker.link(
+                feature.properties["Precitipation"].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Temperature</th>\
+                        <td class="visible-with-data" id="Temperature">' +
+          (feature.properties["Temperature"] !== null
+            ? autolinker.link(
+                feature.properties["Temperature"].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Humidity</th>\
+                        <td class="visible-with-data" id="Humidity">' +
+          (feature.properties["Humidity"] !== null
+            ? autolinker.link(feature.properties["Humidity"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ISPA</th>\
+                        <td class="visible-with-data" id="ISPA">' +
+          (feature.properties["ISPA"] !== null
+            ? autolinker.link(feature.properties["ISPA"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Diarrhea</th>\
+                        <td class="visible-with-data" id="Diarrhea">' +
+          (feature.properties["Diarrhea"] !== null
+            ? autolinker.link(feature.properties["Diarrhea"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Hepatitis</th>\
+                        <td class="visible-with-data" id="Hepatitis">' +
+          (feature.properties["Hepatitis"] !== null
+            ? autolinker.link(feature.properties["Hepatitis"].toLocaleString())
+            : "") +
+          "</td>\
+                    </tr>\
+                </table>";
+        var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+        layer.on("popupopen", function (e) {
+          addClassToPopupIfMedia(content, e.popup);
+        });
+        layer.bindPopup(content, { maxHeight: 400 });
+      }
+
+      function style_Precipitation_7_0(feature) {
+        if (
+          feature.properties["Precitipation"] >= 0.0 &&
+          feature.properties["Precitipation"] <= 2.844091
+        ) {
+          return {
+            pane: "pane_Precipitation_7",
+            stroke: false,
+            fill: true,
+            fillOpacity: 1,
+            fillColor: "rgba(252,164,134,1.0)",
+            interactive: true,
+          };
+        }
+        if (
+          feature.properties["Precitipation"] >= 2.844091 &&
+          feature.properties["Precitipation"] <= 5.688182
+        ) {
+          return {
+            pane: "pane_Precipitation_7",
+            stroke: false,
+            fill: true,
+            fillOpacity: 1,
+            fillColor: "rgba(234,55,42,1.0)",
+            interactive: true,
+          };
+        }
+        if (
+          feature.properties["Precitipation"] >= 5.688182 &&
+          feature.properties["Precitipation"] <= 8.532273
+        ) {
+          return {
+            pane: "pane_Precipitation_7",
+            stroke: false,
+            fill: true,
+            fillOpacity: 1,
+            fillColor: "rgba(103,0,13,1.0)",
+            interactive: true,
+          };
+        }
+      }
+      map.createPane("pane_Precipitation_7");
+      map.getPane("pane_Precipitation_7").style.zIndex = 407;
+      map.getPane("pane_Precipitation_7").style["mix-blend-mode"] = "normal";
+      var layer_Precipitation_7 = new L.geoJson(json_Precipitation_7, {
+        attribution: "",
+        interactive: true,
+        dataVar: "json_Precipitation_7",
+        layerName: "layer_Precipitation_7",
+        pane: "pane_Precipitation_7",
+        onEachFeature: pop_Precipitation_7,
+        style: style_Precipitation_7_0,
+      });
+      bounds_group.addLayer(layer_Precipitation_7);
+      function pop_Hepatitis_8(feature, layer) {
+        layer.on({
+          mouseout: function (e) {
+            for (var i in e.target._eventParents) {
+              if (typeof e.target._eventParents[i].resetStyle === "function") {
+                e.target._eventParents[i].resetStyle(e.target);
+              }
+            }
+            if (typeof layer.closePopup == "function") {
+              layer.closePopup();
+            } else {
+              layer.eachLayer(function (feature) {
+                feature.closePopup();
+              });
+            }
+          },
+          mouseover: highlightFeature,
+        });
+        var popupContent =
+          '<table>\
+                    <tr>\
+                        <th scope="row">id</th>\
+                        <td class="visible-with-data" id="id">' +
+          (feature.properties["id"] !== null
+            ? autolinker.link(feature.properties["id"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">SO2</th>\
+                        <td class="visible-with-data" id="SO2">' +
+          (feature.properties["SO2"] !== null
+            ? autolinker.link(feature.properties["SO2"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Density of Health-care Infrastructure</th>\
+                        <td class="visible-with-data" id="Density of Health-care Infrastructure">' +
+          (feature.properties["Density of Health-care Infrastructure"] !== null
+            ? autolinker.link(
+                feature.properties[
+                  "Density of Health-care Infrastructure"
+                ].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">CO</th>\
+                        <td class="visible-with-data" id="CO">' +
+          (feature.properties["CO"] !== null
+            ? autolinker.link(feature.properties["CO"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NO2</th>\
+                        <td class="visible-with-data" id="NO2">' +
+          (feature.properties["NO2"] !== null
+            ? autolinker.link(feature.properties["NO2"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Precitipation</th>\
+                        <td class="visible-with-data" id="Precitipation">' +
+          (feature.properties["Precitipation"] !== null
+            ? autolinker.link(
+                feature.properties["Precitipation"].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Temperature</th>\
+                        <td class="visible-with-data" id="Temperature">' +
+          (feature.properties["Temperature"] !== null
+            ? autolinker.link(
+                feature.properties["Temperature"].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Humidity</th>\
+                        <td class="visible-with-data" id="Humidity">' +
+          (feature.properties["Humidity"] !== null
+            ? autolinker.link(feature.properties["Humidity"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ISPA</th>\
+                        <td class="visible-with-data" id="ISPA">' +
+          (feature.properties["ISPA"] !== null
+            ? autolinker.link(feature.properties["ISPA"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Diarrhea</th>\
+                        <td class="visible-with-data" id="Diarrhea">' +
+          (feature.properties["Diarrhea"] !== null
+            ? autolinker.link(feature.properties["Diarrhea"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Hepatitis</th>\
+                        <td class="visible-with-data" id="Hepatitis">' +
+          (feature.properties["Hepatitis"] !== null
+            ? autolinker.link(feature.properties["Hepatitis"].toLocaleString())
+            : "") +
+          "</td>\
+                    </tr>\
+                </table>";
+        var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+        layer.on("popupopen", function (e) {
+          addClassToPopupIfMedia(content, e.popup);
+        });
+        layer.bindPopup(content, { maxHeight: 400 });
+      }
+
+      function style_Hepatitis_8_0(feature) {
+        switch (String(feature.properties["Hepatitis"])) {
+          case "Low":
+            return {
+              pane: "pane_Hepatitis_8",
+              stroke: false,
+              fill: true,
+              fillOpacity: 1,
+              fillColor: "rgba(252,164,134,1.0)",
+              interactive: true,
+            };
+            break;
+          case "Middle":
+            return {
+              pane: "pane_Hepatitis_8",
+              stroke: false,
+              fill: true,
+              fillOpacity: 1,
+              fillColor: "rgba(234,55,42,1.0)",
+              interactive: true,
+            };
+            break;
+          case "High":
+            return {
+              pane: "pane_Hepatitis_8",
+              stroke: false,
+              fill: true,
+              fillOpacity: 1,
+              fillColor: "rgba(103,0,13,1.0)",
+              interactive: true,
+            };
+            break;
+          default:
+            return {
+              pane: "pane_Hepatitis_8",
+              stroke: false,
+              fill: true,
+              fillOpacity: 1,
+              fillColor: "rgba(103,0,13,1.0)",
+              interactive: true,
+            };
+            break;
+        }
+      }
+      map.createPane("pane_Hepatitis_8");
+      map.getPane("pane_Hepatitis_8").style.zIndex = 408;
+      map.getPane("pane_Hepatitis_8").style["mix-blend-mode"] = "normal";
+      var layer_Hepatitis_8 = new L.geoJson(json_Hepatitis_8, {
+        attribution: "",
+        interactive: true,
+        dataVar: "json_Hepatitis_8",
+        layerName: "layer_Hepatitis_8",
+        pane: "pane_Hepatitis_8",
+        onEachFeature: pop_Hepatitis_8,
+        style: style_Hepatitis_8_0,
+      });
+      bounds_group.addLayer(layer_Hepatitis_8);
+      function pop_Diarrhea_9(feature, layer) {
+        layer.on({
+          mouseout: function (e) {
+            for (var i in e.target._eventParents) {
+              if (typeof e.target._eventParents[i].resetStyle === "function") {
+                e.target._eventParents[i].resetStyle(e.target);
+              }
+            }
+            if (typeof layer.closePopup == "function") {
+              layer.closePopup();
+            } else {
+              layer.eachLayer(function (feature) {
+                feature.closePopup();
+              });
+            }
+          },
+          mouseover: highlightFeature,
+        });
+        var popupContent =
+          '<table>\
+                    <tr>\
+                        <th scope="row">id</th>\
+                        <td class="visible-with-data" id="id">' +
+          (feature.properties["id"] !== null
+            ? autolinker.link(feature.properties["id"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">SO2</th>\
+                        <td class="visible-with-data" id="SO2">' +
+          (feature.properties["SO2"] !== null
+            ? autolinker.link(feature.properties["SO2"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Density of Health-care Infrastructure</th>\
+                        <td class="visible-with-data" id="Density of Health-care Infrastructure">' +
+          (feature.properties["Density of Health-care Infrastructure"] !== null
+            ? autolinker.link(
+                feature.properties[
+                  "Density of Health-care Infrastructure"
+                ].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">CO</th>\
+                        <td class="visible-with-data" id="CO">' +
+          (feature.properties["CO"] !== null
+            ? autolinker.link(feature.properties["CO"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NO2</th>\
+                        <td class="visible-with-data" id="NO2">' +
+          (feature.properties["NO2"] !== null
+            ? autolinker.link(feature.properties["NO2"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Precitipation</th>\
+                        <td class="visible-with-data" id="Precitipation">' +
+          (feature.properties["Precitipation"] !== null
+            ? autolinker.link(
+                feature.properties["Precitipation"].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Temperature</th>\
+                        <td class="visible-with-data" id="Temperature">' +
+          (feature.properties["Temperature"] !== null
+            ? autolinker.link(
+                feature.properties["Temperature"].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Humidity</th>\
+                        <td class="visible-with-data" id="Humidity">' +
+          (feature.properties["Humidity"] !== null
+            ? autolinker.link(feature.properties["Humidity"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ISPA</th>\
+                        <td class="visible-with-data" id="ISPA">' +
+          (feature.properties["ISPA"] !== null
+            ? autolinker.link(feature.properties["ISPA"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Diarrhea</th>\
+                        <td class="visible-with-data" id="Diarrhea">' +
+          (feature.properties["Diarrhea"] !== null
+            ? autolinker.link(feature.properties["Diarrhea"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Hepatitis</th>\
+                        <td class="visible-with-data" id="Hepatitis">' +
+          (feature.properties["Hepatitis"] !== null
+            ? autolinker.link(feature.properties["Hepatitis"].toLocaleString())
+            : "") +
+          "</td>\
+                    </tr>\
+                </table>";
+        var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+        layer.on("popupopen", function (e) {
+          addClassToPopupIfMedia(content, e.popup);
+        });
+        layer.bindPopup(content, { maxHeight: 400 });
+      }
+
+      function style_Diarrhea_9_0(feature) {
+        switch (String(feature.properties["Diarrhea"])) {
+          case "Low":
+            return {
+              pane: "pane_Diarrhea_9",
+              stroke: false,
+              fill: true,
+              fillOpacity: 1,
+              fillColor: "rgba(252,164,134,1.0)",
+              interactive: true,
+            };
+            break;
+          case "Middle":
+            return {
+              pane: "pane_Diarrhea_9",
+              stroke: false,
+              fill: true,
+              fillOpacity: 1,
+              fillColor: "rgba(234,55,42,1.0)",
+              interactive: true,
+            };
+            break;
+          case "High":
+            return {
+              pane: "pane_Diarrhea_9",
+              stroke: false,
+              fill: true,
+              fillOpacity: 1,
+              fillColor: "rgba(103,0,13,1.0)",
+              interactive: true,
+            };
+            break;
+          default:
+            return {
+              pane: "pane_Diarrhea_9",
+              stroke: false,
+              fill: true,
+              fillOpacity: 1,
+              fillColor: "rgba(103,0,13,1.0)",
+              interactive: true,
+            };
+            break;
+        }
+      }
+      map.createPane("pane_Diarrhea_9");
+      map.getPane("pane_Diarrhea_9").style.zIndex = 409;
+      map.getPane("pane_Diarrhea_9").style["mix-blend-mode"] = "normal";
+      var layer_Diarrhea_9 = new L.geoJson(json_Diarrhea_9, {
+        attribution: "",
+        interactive: true,
+        dataVar: "json_Diarrhea_9",
+        layerName: "layer_Diarrhea_9",
+        pane: "pane_Diarrhea_9",
+        onEachFeature: pop_Diarrhea_9,
+        style: style_Diarrhea_9_0,
+      });
+      bounds_group.addLayer(layer_Diarrhea_9);
+      function pop_ISPA_10(feature, layer) {
+        layer.on({
+          mouseout: function (e) {
+            for (var i in e.target._eventParents) {
+              if (typeof e.target._eventParents[i].resetStyle === "function") {
+                e.target._eventParents[i].resetStyle(e.target);
+              }
+            }
+            if (typeof layer.closePopup == "function") {
+              layer.closePopup();
+            } else {
+              layer.eachLayer(function (feature) {
+                feature.closePopup();
+              });
+            }
+          },
+          mouseover: highlightFeature,
+        });
+        var popupContent =
+          '<table>\
+                    <tr>\
+                        <th scope="row">id</th>\
+                        <td class="visible-with-data" id="id">' +
+          (feature.properties["id"] !== null
+            ? autolinker.link(feature.properties["id"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">SO2</th>\
+                        <td class="visible-with-data" id="SO2">' +
+          (feature.properties["SO2"] !== null
+            ? autolinker.link(feature.properties["SO2"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Density of Health-care Infrastructure</th>\
+                        <td class="visible-with-data" id="Density of Health-care Infrastructure">' +
+          (feature.properties["Density of Health-care Infrastructure"] !== null
+            ? autolinker.link(
+                feature.properties[
+                  "Density of Health-care Infrastructure"
+                ].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">CO</th>\
+                        <td class="visible-with-data" id="CO">' +
+          (feature.properties["CO"] !== null
+            ? autolinker.link(feature.properties["CO"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NO2</th>\
+                        <td class="visible-with-data" id="NO2">' +
+          (feature.properties["NO2"] !== null
+            ? autolinker.link(feature.properties["NO2"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Precitipation</th>\
+                        <td class="visible-with-data" id="Precitipation">' +
+          (feature.properties["Precitipation"] !== null
+            ? autolinker.link(
+                feature.properties["Precitipation"].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Temperature</th>\
+                        <td class="visible-with-data" id="Temperature">' +
+          (feature.properties["Temperature"] !== null
+            ? autolinker.link(
+                feature.properties["Temperature"].toLocaleString()
+              )
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Humidity</th>\
+                        <td class="visible-with-data" id="Humidity">' +
+          (feature.properties["Humidity"] !== null
+            ? autolinker.link(feature.properties["Humidity"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ISPA</th>\
+                        <td class="visible-with-data" id="ISPA">' +
+          (feature.properties["ISPA"] !== null
+            ? autolinker.link(feature.properties["ISPA"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Diarrhea</th>\
+                        <td class="visible-with-data" id="Diarrhea">' +
+          (feature.properties["Diarrhea"] !== null
+            ? autolinker.link(feature.properties["Diarrhea"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Hepatitis</th>\
+                        <td class="visible-with-data" id="Hepatitis">' +
+          (feature.properties["Hepatitis"] !== null
+            ? autolinker.link(feature.properties["Hepatitis"].toLocaleString())
+            : "") +
+          "</td>\
+                    </tr>\
+                </table>";
+        var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+        layer.on("popupopen", function (e) {
+          addClassToPopupIfMedia(content, e.popup);
+        });
+        layer.bindPopup(content, { maxHeight: 400 });
+      }
+
+      function style_ISPA_10_0(feature) {
+        switch (String(feature.properties["ISPA"])) {
+          case "Low":
+            return {
+              pane: "pane_ISPA_10",
+              stroke: false,
+              fill: true,
+              fillOpacity: 1,
+              fillColor: "rgba(252,164,134,1.0)",
+              interactive: true,
+            };
+            break;
+          case "Middle":
+            return {
+              pane: "pane_ISPA_10",
+              stroke: false,
+              fill: true,
+              fillOpacity: 1,
+              fillColor: "rgba(234,55,42,1.0)",
+              interactive: true,
+            };
+            break;
+          case "High":
+            return {
+              pane: "pane_ISPA_10",
+              stroke: false,
+              fill: true,
+              fillOpacity: 1,
+              fillColor: "rgba(103,0,13,1.0)",
+              interactive: true,
+            };
+            break;
+          default:
+            return {
+              pane: "pane_ISPA_10",
+              stroke: false,
+              fill: true,
+              fillOpacity: 1,
+              fillColor: "rgba(103,0,13,1.0)",
+              interactive: true,
+            };
+            break;
+        }
+      }
+      map.createPane("pane_ISPA_10");
+      map.getPane("pane_ISPA_10").style.zIndex = 410;
+      map.getPane("pane_ISPA_10").style["mix-blend-mode"] = "normal";
+      var layer_ISPA_10 = new L.geoJson(json_ISPA_10, {
+        attribution: "",
+        interactive: true,
+        dataVar: "json_ISPA_10",
+        layerName: "layer_ISPA_10",
+        pane: "pane_ISPA_10",
+        onEachFeature: pop_ISPA_10,
+        style: style_ISPA_10_0,
+      });
+      bounds_group.addLayer(layer_ISPA_10);
+      map.addLayer(layer_ISPA_10);
+      function pop_AdministrativeBoundaries_11(feature, layer) {
+        layer.on({
+          mouseout: function (e) {
+            for (var i in e.target._eventParents) {
+              if (typeof e.target._eventParents[i].resetStyle === "function") {
+                e.target._eventParents[i].resetStyle(e.target);
+              }
+            }
+            if (typeof layer.closePopup == "function") {
+              layer.closePopup();
+            } else {
+              layer.eachLayer(function (feature) {
+                feature.closePopup();
+              });
+            }
+          },
+          mouseover: highlightFeature,
+        });
+        var popupContent =
+          '<table>\
+                    <tr>\
+                        <th scope="row">Shape_Leng</th>\
+                        <td class="visible-with-data" id="Shape_Leng">' +
+          (feature.properties["Shape_Leng"] !== null
+            ? autolinker.link(feature.properties["Shape_Leng"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Shape_Area</th>\
+                        <td class="visible-with-data" id="Shape_Area">' +
+          (feature.properties["Shape_Area"] !== null
+            ? autolinker.link(feature.properties["Shape_Area"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ADM2_EN</th>\
+                        <td class="visible-with-data" id="ADM2_EN">' +
+          (feature.properties["ADM2_EN"] !== null
+            ? autolinker.link(feature.properties["ADM2_EN"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ADM2_PCODE</th>\
+                        <td class="visible-with-data" id="ADM2_PCODE">' +
+          (feature.properties["ADM2_PCODE"] !== null
+            ? autolinker.link(feature.properties["ADM2_PCODE"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ADM2_REF</th>\
+                        <td class="visible-with-data" id="ADM2_REF">' +
+          (feature.properties["ADM2_REF"] !== null
+            ? autolinker.link(feature.properties["ADM2_REF"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ADM2ALT1EN</th>\
+                        <td class="visible-with-data" id="ADM2ALT1EN">' +
+          (feature.properties["ADM2ALT1EN"] !== null
+            ? autolinker.link(feature.properties["ADM2ALT1EN"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ADM2ALT2EN</th>\
+                        <td class="visible-with-data" id="ADM2ALT2EN">' +
+          (feature.properties["ADM2ALT2EN"] !== null
+            ? autolinker.link(feature.properties["ADM2ALT2EN"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ADM1_EN</th>\
+                        <td class="visible-with-data" id="ADM1_EN">' +
+          (feature.properties["ADM1_EN"] !== null
+            ? autolinker.link(feature.properties["ADM1_EN"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ADM1_PCODE</th>\
+                        <td class="visible-with-data" id="ADM1_PCODE">' +
+          (feature.properties["ADM1_PCODE"] !== null
+            ? autolinker.link(feature.properties["ADM1_PCODE"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ADM0_EN</th>\
+                        <td class="visible-with-data" id="ADM0_EN">' +
+          (feature.properties["ADM0_EN"] !== null
+            ? autolinker.link(feature.properties["ADM0_EN"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ADM0_PCODE</th>\
+                        <td class="visible-with-data" id="ADM0_PCODE">' +
+          (feature.properties["ADM0_PCODE"] !== null
+            ? autolinker.link(feature.properties["ADM0_PCODE"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">date</th>\
+                        <td class="visible-with-data" id="date">' +
+          (feature.properties["date"] !== null
+            ? autolinker.link(feature.properties["date"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">validOn</th>\
+                        <td class="visible-with-data" id="validOn">' +
+          (feature.properties["validOn"] !== null
+            ? autolinker.link(feature.properties["validOn"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">validTo</th>\
+                        <td class="visible-with-data" id="validTo">' +
+          (feature.properties["validTo"] !== null
+            ? autolinker.link(feature.properties["validTo"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">centerLong</th>\
+                        <td class="visible-with-data" id="centerLong">' +
+          (feature.properties["centerLong"] !== null
+            ? autolinker.link(feature.properties["centerLong"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">centerLat</th>\
+                        <td class="visible-with-data" id="centerLat">' +
+          (feature.properties["centerLat"] !== null
+            ? autolinker.link(feature.properties["centerLat"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">neLat</th>\
+                        <td class="visible-with-data" id="neLat">' +
+          (feature.properties["neLat"] !== null
+            ? autolinker.link(feature.properties["neLat"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">swLat</th>\
+                        <td class="visible-with-data" id="swLat">' +
+          (feature.properties["swLat"] !== null
+            ? autolinker.link(feature.properties["swLat"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">neLong</th>\
+                        <td class="visible-with-data" id="neLong">' +
+          (feature.properties["neLong"] !== null
+            ? autolinker.link(feature.properties["neLong"].toLocaleString())
+            : "") +
+          '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">swLong</th>\
+                        <td class="visible-with-data" id="swLong">' +
+          (feature.properties["swLong"] !== null
+            ? autolinker.link(feature.properties["swLong"].toLocaleString())
+            : "") +
+          "</td>\
+                    </tr>\
+                </table>";
+        var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+        layer.on("popupopen", function (e) {
+          addClassToPopupIfMedia(content, e.popup);
+        });
+        layer.bindPopup(content, { maxHeight: 400 });
+      }
+
+      function style_AdministrativeBoundaries_11_0() {
+        return {
+          pane: "pane_AdministrativeBoundaries_11",
+          opacity: 1,
+          color: "rgba(35,35,35,1.0)",
+          dashArray: "",
+          lineCap: "butt",
+          lineJoin: "miter",
+          weight: 1.0,
+          fillOpacity: 0,
+          interactive: false,
+        };
+      }
+      map.createPane("pane_AdministrativeBoundaries_11");
+      map.getPane("pane_AdministrativeBoundaries_11").style.zIndex = 411;
+      map.getPane("pane_AdministrativeBoundaries_11").style["mix-blend-mode"] =
+        "normal";
+      var layer_AdministrativeBoundaries_11 = new L.geoJson(
+        json_AdministrativeBoundaries_11,
+        {
+          attribution: "",
+          interactive: false,
+          dataVar: "json_AdministrativeBoundaries_11",
+          layerName: "layer_AdministrativeBoundaries_11",
+          pane: "pane_AdministrativeBoundaries_11",
+          onEachFeature: pop_AdministrativeBoundaries_11,
+          style: style_AdministrativeBoundaries_11_0,
+        }
+      );
+      bounds_group.addLayer(layer_AdministrativeBoundaries_11);
+      map.addLayer(layer_AdministrativeBoundaries_11);
+      var osmGeocoder = new L.Control.Geocoder({
+        collapsed: true,
+        position: "topleft",
+        text: "Search",
+        title: "Testing",
+      }).addTo(map);
+      document.getElementsByClassName(
+        "leaflet-control-geocoder-icon"
+      )[0].className += " fa fa-search";
+      document.getElementsByClassName(
+        "leaflet-control-geocoder-icon"
+      )[0].title += "Search for a place";
+      var baseMaps = {};
+      var overlaysTree = [
+        {
+          label:
+            '<img src="legend/AdministrativeBoundaries_11.png" /> Administrative Boundaries',
+          layer: layer_AdministrativeBoundaries_11,
+        },
+        {
+          label:
+            'ISPA<br /><table><tr><td style="text-align: center;"><img src="legend/ISPA_10_Low0.png" /></td><td>Low</td></tr><tr><td style="text-align: center;"><img src="legend/ISPA_10_Middle1.png" /></td><td>Middle</td></tr><tr><td style="text-align: center;"><img src="legend/ISPA_10_High2.png" /></td><td>High</td></tr><tr><td style="text-align: center;"><img src="legend/ISPA_10_3.png" /></td><td></td></tr></table>',
+          layer: layer_ISPA_10,
+        },
+        {
+          label:
+            'Diarrhea<br /><table><tr><td style="text-align: center;"><img src="legend/Diarrhea_9_Low0.png" /></td><td>Low</td></tr><tr><td style="text-align: center;"><img src="legend/Diarrhea_9_Middle1.png" /></td><td>Middle</td></tr><tr><td style="text-align: center;"><img src="legend/Diarrhea_9_High2.png" /></td><td>High</td></tr><tr><td style="text-align: center;"><img src="legend/Diarrhea_9_3.png" /></td><td></td></tr></table>',
+          layer: layer_Diarrhea_9,
+        },
+        {
+          label:
+            'Hepatitis<br /><table><tr><td style="text-align: center;"><img src="legend/Hepatitis_8_Low0.png" /></td><td>Low</td></tr><tr><td style="text-align: center;"><img src="legend/Hepatitis_8_Middle1.png" /></td><td>Middle</td></tr><tr><td style="text-align: center;"><img src="legend/Hepatitis_8_High2.png" /></td><td>High</td></tr><tr><td style="text-align: center;"><img src="legend/Hepatitis_8_3.png" /></td><td></td></tr></table>',
+          layer: layer_Hepatitis_8,
+        },
+        {
+          label:
+            'Precipitation<br /><table><tr><td style="text-align: center;"><img src="legend/Precipitation_7_0280.png" /></td><td>0 - 2,8</td></tr><tr><td style="text-align: center;"><img src="legend/Precipitation_7_28571.png" /></td><td>2,8 - 5,7</td></tr><tr><td style="text-align: center;"><img src="legend/Precipitation_7_57852.png" /></td><td>5,7 - 8,5</td></tr></table>',
+          layer: layer_Precipitation_7,
+        },
+        {
+          label:
+            'Temperature<br /><table><tr><td style="text-align: center;"><img src="legend/Temperature_6_20230.png" /></td><td>20 - 23</td></tr><tr><td style="text-align: center;"><img src="legend/Temperature_6_23261.png" /></td><td>23 - 26</td></tr><tr><td style="text-align: center;"><img src="legend/Temperature_6_26292.png" /></td><td>26 - 29</td></tr></table>',
+          layer: layer_Temperature_6,
+        },
+        {
+          label:
+            'Humidity<br /><table><tr><td style="text-align: center;"><img src="legend/Humidity_5_7638030.png" /></td><td>76,3 - 80,3</td></tr><tr><td style="text-align: center;"><img src="legend/Humidity_5_8038431.png" /></td><td>80,3 - 84,3</td></tr><tr><td style="text-align: center;"><img src="legend/Humidity_5_8438832.png" /></td><td>84,3 - 88,3</td></tr></table>',
+          layer: layer_Humidity_5,
+        },
+        {
+          label:
+            'Density of Healthcare Infrstructure<br /><table><tr><td style="text-align: center;"><img src="legend/GeospasialofHealthcareInfrstructure_4_0140.png" /></td><td>0 - 14</td></tr><tr><td style="text-align: center;"><img src="legend/GeospasialofHealthcareInfrstructure_4_14271.png" /></td><td>14 - 27</td></tr><tr><td style="text-align: center;"><img src="legend/GeospasialofHealthcareInfrstructure_4_27412.png" /></td><td>27 - 41</td></tr></table>',
+          layer: layer_GeospasialofHealthcareInfrstructure_4,
+        },
+        {
+          label:
+            'SO2<br /><table><tr><td style="text-align: center;"><img src="legend/SO2_3_0000290000080.png" /></td><td>-0,00029 - -0,00008</td></tr><tr><td style="text-align: center;"><img src="legend/SO2_3_0000080000131.png" /></td><td>-0,00008 - 0,00013</td></tr><tr><td style="text-align: center;"><img src="legend/SO2_3_0000130000342.png" /></td><td>0,00013 - 0,00034</td></tr></table>',
+          layer: layer_SO2_3,
+        },
+        {
+          label:
+            'CO<br /><table><tr><td style="text-align: center;"><img src="legend/CO_2_00237002910.png" /></td><td>0,0237 - 0,0291</td></tr><tr><td style="text-align: center;"><img src="legend/CO_2_00291003451.png" /></td><td>0,0291 - 0,0345</td></tr><tr><td style="text-align: center;"><img src="legend/CO_2_00345003992.png" /></td><td>0,0345 - 0,0399</td></tr></table>',
+          layer: layer_CO_2,
+        },
+        {
+          label:
+            'NO2<br /><table><tr><td style="text-align: center;"><img src="legend/NO2_1_000000600000490.png" /></td><td>0,000006 - 0,000049</td></tr><tr><td style="text-align: center;"><img src="legend/NO2_1_000004900000931.png" /></td><td>0,000049 - 0,000093</td></tr><tr><td style="text-align: center;"><img src="legend/NO2_1_000009300001362.png" /></td><td>0,000093 - 0,000136</td></tr></table>',
+          layer: layer_NO2_1,
+        },
+        { label: "Google Hybrid", layer: layer_GoogleHybrid_0 },
+      ];
+      var lay = L.control.layers.tree(null, overlaysTree, {
+        //namedToggle: true,
+        //selectorBack: false,
+        //closedSymbol: '&#8862; &#x1f5c0;',
+        //openedSymbol: '&#8863; &#x1f5c1;',
+        //collapseAll: 'Collapse all',
+        //expandAll: 'Expand all',
+        collapsed: true,
+      });
+      lay.addTo(map);
+      setBounds();
+      var i = 0;
+      layer_AdministrativeBoundaries_11.eachLayer(function (layer) {
+        var context = {
+          feature: layer.feature,
+          variables: {},
+        };
+        layer.bindTooltip(
+          layer.feature.properties["ADM2_EN"] !== null
+            ? String(
+                "<div style=\"color: #323232; font-size: 10pt; font-family: 'Courier', sans-serif;\">" +
+                  layer.feature.properties["ADM2_EN"]
+              ) + "</div>"
+            : "",
+          {
+            permanent: true,
+            offset: [-0, -16],
+            className: "css_AdministrativeBoundaries_11",
+          }
+        );
+        labels.push(layer);
+        totalMarkers += 1;
+        layer.added = true;
+        addLabel(layer, i);
+        i++;
+      });
+      resetLabels([layer_AdministrativeBoundaries_11]);
+      map.on("zoomend", function () {
+        resetLabels([layer_AdministrativeBoundaries_11]);
+      });
+      map.on("layeradd", function () {
+        resetLabels([layer_AdministrativeBoundaries_11]);
+      });
+      map.on("layerremove", function () {
+        resetLabels([layer_AdministrativeBoundaries_11]);
+      });
+    </script>
+  </body>
+</html>
